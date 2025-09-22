@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Cart - CodeAlpha</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+
+  <h1>Your Cart</h1>
+  <div id="cart-items"></div>
+  <p id="cart-total">Total: $0.00</p>
+  
+  <!-- Proceed to Payment Button -->
+  <button id="proceedPayment" style="padding: 0.5rem 1rem; margin-top: 1rem; cursor: pointer;">
+    Proceed to Payment
+  </button>
+
+  <script>
+    // Navbar rendering same as index.html
+    function renderNavbar() {
+      const navbar = document.getElementById("navbar");
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="product.html">Products</a>
+          <a href="cart.html">Cart</a>
+          <button id="logoutBtn">Logout</button>
+        `;
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          alert("You have been logged out.");
+          renderNavbar();
+        });
+      } else {
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="product.html">Products</a>
+          <a href="cart.html">Cart</a>
+          <a href="login.html">Login</a>
+          <a href="register.html">Register</a>
+        `;
+      }
+    }
+
+    renderNavbar();
+
+    // Load cart items
+    async function loadCart() {
+      const token = localStorage.getItem('token');
+      if (!token) return alert('Please login to view your cart.');
+
+      try {
+        const res = await fetch('/api/orders/cart', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        const cartItemsDiv = document.getElementById('cart-items');
+        cartItemsDiv.innerHTML = '';
+
+        if (!data.products || data.products.length === 0) {
+          cartItemsDiv.innerHTML = '<p>Your cart is empty</p>';
+          return;
+        }
+
+        let total = 0;
+        data.products.forEach(item => {
+          const div = document.createElement('div');
+          div.innerHTML = `
+            ${item.product.name} - Qty: ${item.quantity} 
+            <button onclick="removeFromCart('${item.product._id}')">Remove</button>
+          `;
+          cartItemsDiv.appendChild(div);
+          total += item.product.price * item.quantity;
+        });
+
+        document.getElementById('cart-total').innerText = `Total: $${total.toFixed(2)}`;
+      } catch (err) {
+        console.error(err);
+        alert('Failed to load cart.');
+      }
+    }
+
+    // Remove from cart
+    async function removeFromCart(productId) {
+      const token = localStorage.getItem('token');
+      try {
+        await fetch(`/api/orders/cart/${productId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        loadCart(); // Refresh cart
+      } catch (err) {
+        console.error(err);
+        alert('Failed to remove item.');
+      }
+    }
+
+    // Proceed to Payment (currently does nothing)
+    document.getElementById('proceedPayment').addEventListener('click', () => {
+      alert('Proceeding to payment (This is for demo. functionality not implemented 😋).');
+    });
+
+    loadCart();
+  </script>
+</body>
+
+</html>

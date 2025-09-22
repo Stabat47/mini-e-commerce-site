@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details - CodeAlpha</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+  <nav id="navbar"></nav>
+
+  <main>
+    <div id="product-container">
+      <img id="product-image" src="" alt="Product Image" style="width:200px;height:200px;">
+      <h2 id="product-name"></h2>
+      <p id="product-description"></p>
+      <p id="product-price"></p>
+      <button id="add-to-cart">Add to Cart</button>
+    </div>
+  </main>
+
+  <script>
+    // Navbar logic
+    function renderNavbar() {
+      const navbar = document.getElementById("navbar");
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="product.html">Products</a>
+          <a href="cart.html">Cart</a>
+          <button id="logoutBtn">Logout</button>
+        `;
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          alert("Logged out");
+          renderNavbar();
+        });
+      } else {
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="product.html">Products</a>
+          <a href="cart.html">Cart</a>
+          <a href="login.html">Login</a>
+          <a href="register.html">Register</a>
+        `;
+      }
+    }
+
+    renderNavbar();
+
+    // Load product details 
+    async function loadProduct() {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('id');
+      if (!productId) return alert('No product selected.');
+
+      try {
+        const res = await fetch(`/api/products/${productId}`);
+        const product = await res.json();
+
+        document.getElementById('product-image').src = product.imageUrl || '';
+        document.getElementById('product-name').innerText = product.name;
+        document.getElementById('product-description').innerText = product.description;
+        document.getElementById('product-price').innerText = `$${product.price}`;
+
+        document.getElementById('add-to-cart').addEventListener('click', async () => {
+          const token = localStorage.getItem('token');
+          if (!token) return alert('Please login first.');
+
+          await fetch('/api/orders/cart', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ productId, quantity: 1 })
+          });
+
+          alert('Added to cart!');
+        });
+      } catch (err) {
+        console.error(err);
+        alert('Failed to load product.');
+      }
+    }
+
+    loadProduct();
+  </script>
+</body>
+
+</html>

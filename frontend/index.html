@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeAlpha E-commerce Store</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+  <nav id="navbar">
+    
+  </nav>
+
+  <div class="container">
+    <h1>Minimal E-commerce</h1>
+    <div id="product-list" class="product-list"></div>
+  </div>
+  
+
+  <script>
+    // Navbar rendering
+    function renderNavbar() {
+      const navbar = document.getElementById("navbar");
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="product.html">Products</a>
+          <a href="cart.html">Cart</a>
+          <button id="logoutBtn">Logout</button>
+        `;
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          alert("You have been logged out.");
+          renderNavbar();
+        });
+      } else {
+        navbar.innerHTML = `
+          <a href="index.html">Home</a>
+          <a href="product.html">Products</a>
+          <a href="cart.html">Cart</a>
+          <a href="login.html">Login</a>
+          <a href="register.html">Register</a>
+        `;
+      }
+    }
+
+    renderNavbar();
+
+    // Load products
+    async function loadProducts() {
+      try {
+        const res = await fetch('/api/products');
+        const products = await res.json();
+        const productList = document.getElementById('product-list');
+        productList.innerHTML = '';
+
+        products.forEach(product => {
+          const div = document.createElement('div');
+          div.classList.add('product-card');
+          div.innerHTML = `
+            <img src="${product.imageUrl || '/assets/TV.jpg'}" 
+                 alt="${product.name}" 
+                 onclick="goToProduct('${product._id}')">
+            <h3 onclick="goToProduct('${product._id}')">${product.name}</h3>
+            <p>Category: ${product.category}</p>
+            <p>$${product.price}</p>
+            <p>Stock: ${product.stock}</p>
+            <button onclick="addToCart('${product._id}', 1)">Add to Cart</button>
+          `;
+          productList.appendChild(div);
+        });
+      } catch (err) {
+        console.error(err);
+        document.getElementById('product-list').innerText = 'Error loading products.';
+      }
+    }
+
+    // Redirect to product page
+    function goToProduct(productId) {
+      window.location.href = `product.html?id=${productId}`;
+    }
+
+    // Add to cart function
+    async function addToCart(productId, quantity) {
+      const token = localStorage.getItem('token');
+      if (!token) return alert('Please login to add items to cart.');
+
+      try {
+        const res = await fetch('/api/orders/cart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ productId, quantity })
+        });
+
+        const data = await res.json();
+        alert('Product added to cart!');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to add to cart.');
+      }
+    }
+
+    loadProducts();
+  </script>
+</body>
+<footer class="footer">
+    <p>&copy; 2025 Demo e-commerce site. All rights reserved.</p>
+</footer>
+</html>
